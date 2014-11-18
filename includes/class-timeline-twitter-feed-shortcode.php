@@ -23,8 +23,9 @@ class Timeline_Twitter_Feed_Shortcode {
 		}
 		
 		add_shortcode( 'timeline-twitter-feed', array( $this, 'generate_tweets' ) );
-		
-		add_filter( 'widget_text', 'do_shortcode' ); // add shortcode support for widgets
+        
+        // add shortcode support for widgets
+		add_filter( 'widget_text', 'do_shortcode' );
 	}
 
 	public function generate_tweets( $atts, $content, $tag ) {
@@ -36,10 +37,21 @@ class Timeline_Twitter_Feed_Shortcode {
 			$atts = array();
 		}
 
+		$hash_keys = get_option( Timeline_Twitter_Feed_Options::HASH_KEYS, array() );
+
 		// Make a unique hashkey for this query
 		$hash_key = md5( 'twitterfeed-' . implode( '-', $atts ) );
 
-		update_option( Timeline_Twitter_Feed_Options::HASH_KEY, $hash_key );
+		if ( ! in_array( $hash_key, $hash_keys ) ) {
+			$hash_keys[] = $hash_key;
+		}
+		
+		/**
+		 * Update database with all hash keys for easy cache flushing.
+		 *
+		 * @see Timeline_Twitter_Feed_Backend::delete_cached_feeds()
+		 */
+		update_option( Timeline_Twitter_Feed_Options::HASH_KEYS, $hash_keys );
 
 		// Delete hash key (for dev and debug only!)
 		// delete_transient( $hash_key );
@@ -61,12 +73,19 @@ class Timeline_Twitter_Feed_Shortcode {
 			$shortcode .= '}';
 			
 			$output = sprintf( '<div class="timeline-twitter-feed" id="%s" data-shortcode="%s">', esc_attr( $hash_key ), $shortcode );
-			
-			$tweets = $twitter_app->get_tweets( $this->basic_options[Timeline_Twitter_Feed_Options::USERNAME], $this->basic_options[Timeline_Twitter_Feed_Options::NUM_TWEETS] );
+
+			$num_tweets         = (int) $this->basic_options[Timeline_Twitter_Feed_Options::NUM_TWEETS];
+			$num_hashtag_tweets = $num_tweets;
+
+			$tweets = array();
+			if ( 'on' !== $this->advanced_options[Timeline_Twitter_Feed_Options::ONLY_HASHTAGS] ) {
+				$tweets = $twitter_app->get_tweets( $this->basic_options[Timeline_Twitter_Feed_Options::USERNAME], $num_tweets );
+				$num_hashtag_tweets = (int) $this->advanced_options[Timeline_Twitter_Feed_Options::NUM_HASHTAG_TWEETS];
+			}
 
 			if ( isset( $atts['terms'] ) ) {
 				$terms         = str_replace( '#', '%23', $atts['terms'] );
-				$search_tweets = $twitter_app->get_search_results( $terms, $this->advanced_options[Timeline_Twitter_Feed_Options::NUM_HASHTAG_TWEETS] );
+				$search_tweets = $twitter_app->get_search_results( $terms, $num_hashtag_tweets );
 				$statuses      = $search_tweets->statuses;
 				
 				if ( $statuses ) {
@@ -95,7 +114,7 @@ class Timeline_Twitter_Feed_Shortcode {
 
 			}
 
-			foreach ( array_slice( $tweets, 0, $this->basic_options[Timeline_Twitter_Feed_Options::NUM_TWEETS] ) as $tweet ) {
+			foreach ( array_slice( $tweets, 0, $num_tweets ) as $tweet ) {
 				$output .= $this->generate_tweet( $tweet );
 			}
 
@@ -115,9 +134,7 @@ class Timeline_Twitter_Feed_Shortcode {
 	}
 	
 	public function generate_tweet( $tweet ) {
-		$text = $tweet->text;
-
-		$text = esc_html( $text ); // prepare tweet for use in HTML
+		$text = esc_html( $tweet->text ); // prepare tweet for use in HTML
 
 		$output = '<div class="ttf-tweet">';
 
@@ -144,7 +161,8 @@ class Timeline_Twitter_Feed_Shortcode {
 		}
 		
 		if ( 'on' === $this->advanced_options[Timeline_Twitter_Feed_Options::HASH_LINKS] ) {
-			$text = preg_replace( '(#([a-zA-Z0-9\_]+))', '<a href="http://twitter.com/search?q=%23\\1" target="_blank" rel="nofollow">\\0</a>', $text );
+			// @props aaronrossanocomau for fixing the regex
+			$text = preg_replace( '/(?<!&)#(\w+)/i', '<a href="http://twitter.com/search?q=%23\\1" target="_blank" rel="nofollow">\\0</a>', $text );
 		}
 
 		$output .= $text . '</div></div>';
@@ -250,8 +268,7 @@ class Timeline_Twitter_Feed_Shortcode {
             $this->basic_options[Timeline_Twitter_Feed_Options::CONSUMER_KEY],
             $this->basic_options[Timeline_Twitter_Feed_Options::CONSUMER_SECRET],
             $this->basic_options[Timeline_Twitter_Feed_Options::ACCESS_TOKEN],
-            $this->basic_options[Timeline_Twitter_Feed_Options::ACCESS_SECRET],
-            $this->basic_options[Timeline_Twitter_Feed_Options::USERNAME],
+            $this->basic_options[Timeline_Twitter_Feed_Options::ACCESS_SECRET]
         );
 
         if ( false !== array_search( '', $basic_options ) ) {
@@ -264,7 +281,7 @@ class Timeline_Twitter_Feed_Shortcode {
 	public function print_error_message() {
 		if ( current_user_can( 'manage_options' ) ) {
 			$error = sprintf(
-				'<p class="ttf-red">%s <a href="%soptions-general.php?page=%s">%s</a> %s</p>',
+				'<p class="ttf-red">%s <a href="%soptions-general.php?page=%s"><span style="text-decoration: underline;">%s</span></a> %s</p>',
 				__( "Twitter is unresponsive, user doesn't exist or Feed API and/or username settings are missing.", Timeline_Twitter_Feed::TEXTDOMAIN ),
 				esc_url( get_admin_url() ),
 				Timeline_Twitter_Feed::TEXTDOMAIN,
@@ -300,8 +317,7 @@ class Timeline_Twitter_Feed_Shortcode {
 	public function has_blocked_words( $tweet ) {
 		$tweet = $tweet->user->screen_name . ' ' . $tweet->text;
 		
-		$keywords = explode( ',', $this->other_options[Timeline_Twitter_Feed_Options::KEYWORD_FILTER] );
-		$keywords = array_map( 'trim', $keywords );
+		$keywords = Timeline_Twitter_Feed_Functions::str_split( $this->other_options[Timeline_Twitter_Feed_Options::KEYWORD_FILTER] );
 		
 		$result = count( array_intersect( $keywords, explode( ' ', $tweet ) ) );
 		

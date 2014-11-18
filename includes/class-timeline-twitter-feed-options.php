@@ -9,7 +9,7 @@ class Timeline_Twitter_Feed_Options {
 	const HELP               = 'ttf_help';
 	CONST APPROVED           = 'ttf_feed_approval';
 	const OUTPUT             = 'ttf_feed_output';
-	const HASH_KEY           = 'ttf_hash_key';
+	const HASH_KEYS          = 'ttf_hash_keys';
 
 	// Basic options
 	const CONSUMER_KEY       = 'consumer_key';
@@ -18,9 +18,10 @@ class Timeline_Twitter_Feed_Options {
 	const ACCESS_SECRET      = 'access_secret';
 	const USERNAME           = 'username';
 	const NUM_TWEETS         = 'num_tweets';
-	const NUM_HASHTAG_TWEETS = 'num_hashtag_tweets';
 
 	// Advanced options
+	const NUM_HASHTAG_TWEETS = 'num_hashtag_tweets';
+	const ONLY_HASHTAGS      = 'only_hashtags';
 	const TWITTER_JS         = 'twitter_js';
 	const PROFILE_IMG        = 'profile_img';
 	const HTTPS_IMG          = 'https_img';
