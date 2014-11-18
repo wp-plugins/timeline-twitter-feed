@@ -16,11 +16,27 @@ class Timeline_Twitter_Feed_Widget extends WP_Widget {
 			echo $args['before_title'] . $instance['title'] . $args['after_title'];
 		}
 		echo '<div class="twitter-feed-widget">';
+		$shortcode = '[timeline-twitter-feed';
 		if ( $instance['terms'] ) {
-			echo do_shortcode( '[timeline-twitter-feed terms="' . $instance['terms'] . '"]' );
-		} else {
-			echo do_shortcode( '[timeline-twitter-feed]' );
+			$shortcode .= ' terms="';
+			// backwards compatibility for user input from plugin version 0.9
+			if ( false !== strpos( $instance['terms'], 'OR' ) ) {
+				$shortcode .= esc_attr( trim( $instance['terms'] ) );
+			} else {
+				$hashtags = Timeline_Twitter_Feed_Functions::str_split( $instance['terms'] );
+				foreach ( $hashtags as $hashtag ) {
+					$hashtag = esc_attr( $hashtag );
+					if ( false === strpos( $hashtag, '#' ) ) {
+						$hashtag = '#' . $hashtag;
+					}
+					$shortcode .= $hashtag  . ' OR ';
+				}
+				$shortcode = rtrim( $shortcode, ' OR ' );
+			}
+			$shortcode .= '"';
 		}
+		$shortcode .= ']';
+		echo do_shortcode( $shortcode );
 		echo '</div>';
 		echo $args['after_widget'];
 	}
@@ -38,12 +54,10 @@ class Timeline_Twitter_Feed_Widget extends WP_Widget {
 			<input class="widefat" id="<?php echo $this->get_field_id( 'terms' ); ?>" name="<?php echo $this->get_field_name( 'terms' ); ?>" type="text" value="<?php echo esc_attr( $terms ); ?>">
 		</p>
 		<p class="description">
-			<?php _e( 'Here are some examples for the hashtags', Timeline_TWitter_Feed::TEXTDOMAIN ) ?>:<br />
-			<em>#WP<br />
-			#WP OR #WordPress<br />
-			#WP OR #WordPress OR #Blog OR #CMS<br />
-			<br />
-			<?php _e( 'You can use just about any term you want and decide how many terms you want to use. Make sure every term starts with "#" and seperate the terms with "OR".', Timeline_TWitter_Feed::TEXTDOMAIN ); ?>
+			<em>
+				<?php _e( 'Seperate multiple hashtags with commas', Timeline_TWitter_Feed::TEXTDOMAIN ) ?>.<br />
+				<?php _e( 'For example', Timeline_TWitter_Feed::TEXTDOMAIN ); ?>: #WP, #WordPress, #CMS, #blog
+			</em>
 		</p>
 		<?php 
 	}

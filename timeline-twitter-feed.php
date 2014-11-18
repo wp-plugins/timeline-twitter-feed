@@ -3,9 +3,9 @@
  * Plugin Name: Timeline Twitter Feed
  * Plugin URI:  http://wordpress.org/plugins/timeline-twitter-feed/
  * Description: Timeline Twitter Feed let's you output your timeline feed and multiple hashtags into your WordPress site as flat HTML.
- * Version:     0.9
- * Author: 		Ezra Verheijen
- * Author URI: 	http://profiles.wordpress.org/ezraverheijen/
+ * Version:     1.0
+ * Author:      Ezra Verheijen
+ * Author URI:  http://profiles.wordpress.org/ezraverheijen/
  * License:     GPL v3
  * Text Domain: timeline-twitter-feed
  * 
@@ -41,17 +41,17 @@ if ( ! class_exists( 'Timeline_Twitter_Feed' ) ) {
 	
 	class Timeline_Twitter_Feed {
 		const PLUGIN_NAME    = 'Timeline Twitter Feed';
-		const PLUGIN_VERSION = '0.9';
+		const PLUGIN_VERSION = '1.0';
 		const TEXTDOMAIN     = 'timeline-twitter-feed';
 
 		private $other_options = array();
 
 		function __construct() {
 			$this->other_options = get_option( Timeline_Twitter_Feed_Options::OTHER_OPTIONS );
-
+			
 			add_action( 'widgets_init', array( $this, 'register_twitter_feed_widget' ) );
 			add_action( 'plugins_loaded', array( $this, 'load_plugin_translation' ) );
-
+			
 			new Timeline_Twitter_Feed_Backend();
 			new Timeline_Twitter_Feed_Frontend();
 			new Timeline_Twitter_Feed_Shortcode();
@@ -71,7 +71,11 @@ if ( ! class_exists( 'Timeline_Twitter_Feed' ) ) {
 		}
 		
 		public function load_plugin_translation() {
-			load_plugin_textdomain( self::TEXTDOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+			load_plugin_textdomain(
+				self::TEXTDOMAIN,
+				false,
+				dirname( plugin_basename( __FILE__ ) ) . '/languages/'
+			);
 		}
 
 		public function add_default_options_to_database() {
@@ -86,6 +90,7 @@ if ( ! class_exists( 'Timeline_Twitter_Feed' ) ) {
 
 			add_option( Timeline_Twitter_Feed_Options::ADVANCED_OPTIONS, array(
 				Timeline_Twitter_Feed_Options::NUM_HASHTAG_TWEETS => '3',
+				Timeline_Twitter_Feed_Options::ONLY_HASHTAGS      => 'off',
 				Timeline_Twitter_Feed_Options::TWITTER_JS         => 'on',
 				Timeline_Twitter_Feed_Options::PROFILE_IMG        => 'off',
 				Timeline_Twitter_Feed_Options::HTTPS_IMG          => 'off',
@@ -104,7 +109,7 @@ if ( ! class_exists( 'Timeline_Twitter_Feed' ) ) {
 
 			add_option( Timeline_Twitter_Feed_Options::OTHER_OPTIONS, array(
 				Timeline_Twitter_Feed_Options::CACHE_EXPIRE    => '300',
-				Timeline_Twitter_Feed_Options::DO_AJAX_UPDATES => 'on',
+				Timeline_Twitter_Feed_Options::DO_AJAX_UPDATES => 'off',
 				Timeline_Twitter_Feed_Options::KEYWORD_FILTER  => '',
 				Timeline_Twitter_Feed_Options::APPROVAL_FIRST  => 'off',
 				Timeline_Twitter_Feed_Options::CUSTOM_CSS      => '',
@@ -119,10 +124,15 @@ if ( ! class_exists( 'Timeline_Twitter_Feed' ) ) {
 			) );
 
 			add_option( Timeline_Twitter_Feed_Options::APPROVED, array() );
+			add_option( Timeline_Twitter_Feed_Options::HASH_KEYS, array() );
 		}
 
 		public function add_plugin_settings_link( $links ) {
-			array_unshift( $links, sprintf( '<a href="options-general.php?page=%s">%s</a>', self::TEXTDOMAIN, __( 'Settings' ) ) ); // "Settings" is translated by WordPress
+			array_unshift( $links, sprintf(
+				'<a href="options-general.php?page=%s">%s</a>',
+				self::TEXTDOMAIN,
+				__( 'Settings' ) // translated by WordPress
+			) );
 			return $links;
 		}
 
@@ -139,7 +149,7 @@ if ( ! class_exists( 'Timeline_Twitter_Feed' ) ) {
 				Timeline_Twitter_Feed_Options::HELP,
 				Timeline_Twitter_Feed_Options::APPROVED,
 				Timeline_Twitter_Feed_Options::OUTPUT,
-				Timeline_Twitter_Feed_Options::HASH_KEY,
+				Timeline_Twitter_Feed_Options::HASH_KEYS,
 			) );
 		}
 	}
