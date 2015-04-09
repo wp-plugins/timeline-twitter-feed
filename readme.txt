@@ -28,11 +28,11 @@ If you don’t report it, I can’t fix it!
 
 == Frequently Asked Questions ==
 
-= Why is the feed not showing tweets when "hashtags only" option is selected? =
+= Why is the feed not showing tweets when `hashtags only` option is selected? =
 
 If you show tweets from hashtags, unwanted tweets will be filtered out.
-Unwanted teets are tweets that contain words from the "discard tweets" option, tweets that are retweets or tweets with hashtags from your own account.
-Try to set the "number of tweets to get in advance" to a higher number.
+Unwanted teets are tweets that contain words from the `discard tweets` option, tweets that are retweets or tweets with hashtags from your own account.
+Try to set the `number of tweets to get in advance` to a higher number.
 
 == Screenshots ==
 
